@@ -43,8 +43,29 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
 
-      - name: Upload APK artifact
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: SJPlayerPro-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Decode release keystore
+        if: ${{ secrets.SJ_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.SJ_KEYSTORE_BASE64 }}" | base64 -d > "${{ runner.temp }}/sj-release.jks"
+
+      - name: Build signed release APK
+        if: ${{ secrets.SJ_KEYSTORE_BASE64 != '' }}
+        env:
+          SJ_KEYSTORE_PATH: ${{ runner.temp }}/sj-release.jks
+          SJ_KEYSTORE_PASSWORD: ${{ secrets.SJ_KEYSTORE_PASSWORD }}
+          SJ_KEY_ALIAS: ${{ secrets.SJ_KEY_ALIAS }}
+          SJ_KEY_PASSWORD: ${{ secrets.SJ_KEY_PASSWORD }}
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Upload signed release APK artifact
+        if: ${{ secrets.SJ_KEYSTORE_BASE64 != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SJPlayerPro-release-apk-signed
+          path: app/build/outputs/apk/release/app-release.apk
